@@ -1,0 +1,43 @@
+ 
+1.Docker vs Native Setup: อธิบายข้อดีของการใช้ Docker เปรียบเทียบกับการติดตั้ง ESP-IDF บน host system
+Docker  แยก environment ของ ESP-IDF ออกจากระบบหลัก ป้องกันปัญหา dependency conflict กับซอฟต์แวร์อื่นไม่ต้องติดตั้ง ESP-IDF, toolchain, Python packages ลงในเครื่องโดยตรง
+host system เข้าถึงอุปกรณ์ USB หรือพอร์ตต่าง ๆ โดยตรง ง่ายกว่าการต้อง map เข้า Docker
+2.Build Process: อธิบายขั้นตอนการ build ของ ESP-IDF ใน Docker container ตั้งแต่ source code จนได้ binary
+Start Docker Container: เรียกใช้งาน container ที่มี ESP-IDF environment ติดตั้งไว้
+Mount Project Folder: ใช้ -v เพื่อ mount โฟลเดอร์โปรเจกต์จาก host เข้าสู่ container
+Set IDF Path: Container จะมีตัวแปร environment เช่น IDF_PATH, IDF_TOOLS_PATH ถูกตั้งไว้ล่วงหน้า
+Configure Project: ใช้คำสั่ง idf.py set-target esp32 (หรือ chip อื่น ๆ) และ idf.py menuconfig เพื่อเลือกการตั้งค่า
+Build: ใช้ idf.py build
+CMake จะทำงานโดยอ่าน CMakeLists.txt เพื่อ generate build system
+ใช้ Ninja หรือ Make เพื่อ compile source code
+สร้าง binary เช่น .elf, .bin, .map
+Output: ไฟล์จะอยู่ในโฟลเดอร์ build/ ซึ่ง mount กลับไปยัง host ทำให้เข้าถึงได้หลัง container ปิด
+3.CMake Files: บทบาทของไฟล์ CMakeLists.txt แต่ละไฟล์คืออะไร และทำงานอย่างไรใน Docker environment?
+เป็น build system หลัก
+ใช้จัดการ source code เฉพาะส่วนนั้น
+เพิ่ม target ใหม่ เช่น library หรือ executable
+ระบุ dependency เฉพาะส่วนนั้น
+4.Git Ignore: ไฟล์ .gitignore มีความสำคัญอย่างไรสำหรับ ESP32 project development?
+ป้องกันการ commit ไฟล์ build ที่ไม่จำเป็น
+ESP32 ใช้ระบบ build อย่าง CMake + Ninja หรือ Make (ใน ESP-IDF), ซึ่งจะสร้างไฟล์จำนวนมากในโฟลเดอร์เช่น build/ หรือ .pio/ (สำหรับ PlatformIO)
+ลดขนาด repo และเพิ่มความสะอาดของ history
+การ track ไฟล์ชั่วคราวหรือไฟล์ binary ที่ใหญ่จะทำให้ Git repo ใหญ่โดยไม่จำเป็น และทำให้ดู history ยาก
+5.Container Persistence: ข้อมูลใดบ้างที่จะหายไปเมื่อ restart container และข้อมูลใดที่จะอยู่ต่อ?
+ข้อมูลที่จะ หายไป เมื่อ restart container
+ไฟล์หรือข้อมูลที่ถูกเขียนลงใน container's writable layer:
+เช่น ไฟล์ที่ถูกสร้างหรือแก้ไขใน path ปกติภายใน container (/app/tmp/, /home/user/, etc.)
+ข้อมูล runtime ที่ไม่ได้ mount ไปยัง volume หรือ bind mount
+ตัวอย่างเช่น log files, cache, temporary files ที่ถูกสร้างโดยโปรแกรมใน container
+ข้อมูลใน memory / RAM:
+ค่าใน environment runtime, temporary process, shared memory – จะหายแน่นอน
+ข้อมูลที่จะ ยังอยู่ หลังจาก restart container
+ข้อมูลใน Docker Volume เช่น: /data, /db ที่ mount ไปยัง volume
+Docker volume เก็บแยกจาก container และถูก share ได้หลาย container
+ใช้กับ database (PostgreSQL, Redis, etc.), config, persistent state
+ข้อมูลใน Bind Mount เช่น: -v $(pwd)/data:/app/data
+ไฟล์ในเครื่อง host จะผูกกับ container path โดยตรง
+ไฟล์ที่ build มาตอน docker build (อยู่ใน image layer) เช่น ไฟล์ที่ถูก copy เข้า image (COPY . /app) จะไม่หาย
+Environment variable ที่กำหนดตอน docker run หรือใน compose file
+6.Development Workflow: เปรียบเทียบ workflow การพัฒนาระหว่างการใช้ Docker กับการทำงานบน native system
+Docker เหมาะกับงานที่ต้องการ consistency, team collaboration, CI/CD, และแยก environment ชัดเจน
+Native system เหมาะกับงานที่เน้นความเร็วในการพัฒนา, debug ง่าย, และไม่อยากจัดการ layer เพิ่ม
