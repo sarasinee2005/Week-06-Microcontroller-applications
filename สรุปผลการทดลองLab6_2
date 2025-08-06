@@ -12,12 +12,12 @@
 จำนวนไฟล์ source: MAIN: 3file from file: ./main/lab6_2_multiple_files.c
 SENSOR: ... from file: ./main/sensor.c
 DISPLAY: ... from file: ./main/display.c
-ขนาด binary: 164208 bytes
+ขนาด binary: 93008 bytes
 การทำงาน: อ่านค่า sensor และแสดงผลบน display ใน loop
 ขั้นตอนที่ 2 (เพิ่ม display.c):
 
 จำนวนไฟล์ source:  3 file app_main(),sensor.c ,display.c 
-ขนาด binary: 164356 bytes
+ขนาด binary: 108000 bytes
 การทำงาน: ใช้แสดงข้อมูลsensorเป็นลูปในแต่ละรอบ
 ขั้นตอนที่ 3 (เพิ่ม led.c):
 
